@@ -1,77 +1,83 @@
-# RedDimension: Custom 3D Training Pipeline (AMD ROCm) 🔴📐
+# RedDimension: Custom 3D Training Pipeline (AMD ROCm Optimized) 🔴📐
 
-Этот репозиторий содержит полный набор инструментов для обучения собственной нейросети генерации 3D-моделей из 2D-изображений. Система оптимизирована для видеокарт **AMD (RDNA 3/4)**.
+RedDimension is a comprehensive toolkit designed to train custom neural networks for 3D model generation from 2D images. This system is specifically architected and optimized for **AMD Radeon GPUs (RDNA 3/4)** using the ROCm stack.
 
-## 🛠 Подготовка окружения
-1. Установите зависимости:
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. Подготовьте папки:
-   Создайте в корне проекта структуру: `dataset/raw`, `dataset/processed`, `dataset/images`.
+---
 
-## 🛠 Подготовка системы (Windows)
+## 🛠 Prerequisites & Environment Setup
 
-Для работы на Windows с видеокартами AMD серии 7000/9000 необходимо:
+### 1. Folder Structure
+Create the following directory structure in the project root:
+`dataset/raw`, `dataset/processed`, `dataset/images`.
 
-1. **HIP SDK:** Установите [AMD HIP SDK 7.1.1](https://amd.com).
-2. **ROCm Libraries:** Скачайте необходимые компоненты ROCm 7.1.1 из официального репозитория [repo.radeon.com/rocm/windows/](https://repo.radeon.com/rocm/windows/).
-3. **Environment:** Убедитесь, что пути к бинарным файлам HIP добавлены в системную переменную `PATH`.
+### 2. Basic Installation
+Install the required Python dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-*Проект тестировался на архитектуре RDNA 4 (GFX 12.0.1) с использованием HSA_OVERRIDE.*
+---
 
-## 🛠 Порядок установки (ВАЖНО)
+## 🖥 Windows System Requirements (AMD GPUs)
 
-Для корректной работы на Windows необходимо строго соблюдать последовательность установки. В противном случае PyTorch не сможет инициализировать среду ROCm.
+To run this pipeline on Windows with **AMD 7000/9000 series** (RDNA 3/4), the following components are mandatory:
 
-1. **Базовые библиотеки:** 
-   Установите все зависимости из `requirements.txt`:
-   ```bash
-   pip install -r requirements.txt
-   ```
+*   **HIP SDK:** Install [AMD HIP SDK 7.1.1](https://amd.com).
+*   **ROCm Libraries:** Download essential ROCm 7.1.1 components from the official [Radeon Repository](https://radeon.com).
+*   **Environment Variables:** Ensure the HIP binary paths are added to your system `PATH`.
 
-2. **ROCm / HIP SDK:**
-   Только ПОСЛЕ установки Python-библиотек устанавливайте:
-   - [AMD HIP SDK 7.1.1](https://amd.com)
-   - Компоненты из [://radeon.com](https://radeon.com)
+*Project tested on RDNA 4 architecture (**GFX 12.0.1**) using `HSA_OVERRIDE`.*
 
-**Почему это важно:** Инсталлятор ROCm должен прописать пути в системной среде и зарегистрировать библиотеки в системе после того, как пакеты Python создадут свои локальные зависимости. Если сделать наоборот, возникнет конфликт версий `hipblas.dll` и других ядерных библиотек.
+---
 
-*Проверено на: Windows 10/11, PyTorch 2.3+ (ROCm version).*
+## ⚠️ CRITICAL: Installation Order
 
+For ROCm to initialize correctly on Windows, you **MUST** follow this specific sequence:
 
-## 📈 Цикл обучения (Step-by-Step)
+1.  **Python Libraries First:** Install all dependencies via `pip install -r requirements.txt`.
+2.  **ROCm / HIP SDK Second:** Install the AMD HIP SDK and ROCm components **ONLY AFTER** the Python packages are installed.
 
-### 1. Конвертация в SDF
-Поместите ваши `.glb` или `.obj` модели в `dataset/raw/` и запустите расчет математических полей:
+**Why this matters:** The ROCm installer must register system paths and libraries after the Python environment is set up to avoid version conflicts with `hipblas.dll` and other core kernels.
+
+---
+
+## 📈 Training Workflow (Step-by-Step)
+
+### 1. SDF Conversion
+Place your `.glb` or `.obj` models into `dataset/raw/` and calculate the signed distance fields:
 ```bash
 python step2_convert_to_sdf.py
 ```
-*Этот этап максимально нагружает CPU. Оптимизировано для многопоточности.*
+*Note: This stage is extremely CPU-intensive and optimized for high-core-count multithreading.*
 
-### 2. Генерация датасета изображений
-Создайте 2D-проекции ваших моделей для обучения "зрения" нейросети:
+### 2. Multi-View Dataset Generation
+Generate 2D projections of your models to train the computer vision encoder:
 ```bash
 python step5_render_dataset.py
 ```
-*Скрипт автоматически удалит битые SDF-файлы, для которых не удалось создать рендер.*
+*The script automatically cleans up "orphaned" SDF files if rendering fails for a specific model.*
 
-### 3. Запуск обучения
-Начните процесс обучения (Transformer 12 layers, 1024 dim):
+### 3. Core Training
+Start the neural network training (Transformer 12 layers, 1024 dim):
 ```bash
 python train_image_to_3d.py
 ```
-*Используется 8-bit Adam и смешанная точность (AMP) для экономии VRAM на картах AMD.*
+*Features: 8-bit Adam optimizer and Mixed Precision (AMP) to minimize VRAM usage on AMD hardware.*
 
-## 🖥 Использование
-После завершения обучения (рекомендуется Loss < 0.001), запустите интерфейс для тестов:
+---
+
+## 🚀 Inference & Usage
+
+Once training is complete (recommended **Loss < 0.001**), launch the Gradio-based web interface for testing:
 ```bash
 python app.py
 ```
 
-## ⚠️ Специфические настройки AMD
-В каждом скрипте прописаны переменные окружения для стабильности **ROCm 7.x** на архитектуре **GFX 12.0.1**. Если у вас другая карта, поправьте `HSA_OVERRIDE_GFX_VERSION` в коде.
+---
 
-## 📄 Лицензия
+## ⚙️ AMD Specific Tweaks
+Each script includes pre-configured environment variables for **ROCm 7.x** stability on **GFX 12.0.1**. If you are using a different AMD architecture, please adjust `HSA_OVERRIDE_GFX_VERSION` in the source code.
+
+## 📄 License
 MIT
 
