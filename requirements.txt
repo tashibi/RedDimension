@@ -1,0 +1,9 @@
+torch
+torchvision
+numpy
+trimesh
+mesh-to-sdf
+gradio
+scikit-image
+opencv-python
+pyglet
