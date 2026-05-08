@@ -10,6 +10,16 @@
 2. Подготовьте папки:
    Создайте в корне проекта структуру: `dataset/raw`, `dataset/processed`, `dataset/images`.
 
+   ## 🛠 Подготовка системы (Windows)
+
+Для работы на Windows с видеокартами AMD серии 7000/9000 необходимо:
+
+1. **HIP SDK:** Установите [AMD HIP SDK 7.1.1](https://amd.com).
+2. **ROCm Libraries:** Скачайте необходимые компоненты ROCm 7.1.1 из официального репозитория [repo.radeon.com/rocm/windows/](https://repo.radeon.com/rocm/windows/).
+3. **Environment:** Убедитесь, что пути к бинарным файлам HIP добавлены в системную переменную `PATH`.
+
+*Проект тестировался на архитектуре RDNA 4 (GFX 12.0.1) с использованием HSA_OVERRIDE.*
+
 ## 📈 Цикл обучения (Step-by-Step)
 
 ### 1. Конвертация в SDF
